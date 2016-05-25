@@ -23,7 +23,15 @@ function get_flag(x,y,f)
 end
 
 function solid(x,y)
-	return get_flag(x,y,1)
+	if get_flag(x,y,1) then
+		return true
+	elseif x == to_tile(p1.x) and y == to_tile(p1.y) then
+		return true
+	elseif x == to_tile(p2.x) and y == to_tile(p2.y) then
+		return true
+	else
+		return false
+	end
 end
 
 function curable(x,y,p)
@@ -129,7 +137,15 @@ function shoot(p)
 	end
 end
 
-
+function attack(a,b)
+	local t  = get_target(a)
+	local bx = to_tile(b.x)
+	local by = to_tile(b.y)
+	
+	if bx == t.x and by == t.y then
+		b.alive = false
+	end
+end
 
 
 
@@ -154,6 +170,7 @@ function make_player(x,y,id,f)
 	p.flipx = false
 	
 	p.score = 0
+	p.alive = true
 	
 	return p
 end
@@ -189,8 +206,12 @@ function move_players()
 	 down(p1)
 	end
 	
-	if btnp(4,a) or btnp(5,a) then
+	if btnp(4,a) then
 		shoot(p1)
+	end
+	
+	if btnp(5,a) then
+		attack(p1,p2)
 	end
 	
 	-- player 2
@@ -204,8 +225,12 @@ function move_players()
 	 down(p2)
 	end
 	
-	if btnp(4,b) or btnp(5,b) then
+	if btnp(4,b) then
 		shoot(p2)
+	end
+	
+	if btnp(5,b) then
+		attack(p2,p1)
 	end
 end
 
@@ -261,6 +286,22 @@ function update_score()
 	end
 end
 
+function update_death()
+	if p1tick == (30*revive) then
+		p1.x = p1startx
+		p1.y = p1starty
+		p1.alive = true
+		p1tick   = 0
+	end
+	
+	if p2tick == (30*revive) then
+		p2.x = p2startx
+		p2.y = p2starty
+		p2.alive = true
+		p2tick   = 0
+	end
+end
+
 function reset()
 	gameover = false
 	tick     = 0
@@ -299,7 +340,6 @@ function draw_map(x,y,w,h)
 	map(x,y, shift_x,shift_y, w,h)
 	
 	draw_players(shift_x,shift_y)
-
 end
 
 function draw_players(shift_x,shift_y)
@@ -309,9 +349,13 @@ function draw_players(shift_x,shift_y)
 	local p2x = p2.x + shift_x
 	local p2y = p2.y + shift_y
 	
-	spr(p1.frame, p1x, p1y, 1, 1, p1.flipx)
+	if p1.alive then
+		spr(p1.frame, p1x, p1y, 1, 1, p1.flipx)
+	end
+	
+	if p2.alive then
 	spr(p2.frame, p2x, p2y, 1, 1, p2.flipx)
-
+	end
 end
 
 function draw_score()
@@ -372,23 +416,42 @@ end
 
 function _init() 
 	palt(6,true)
+	p1startx = to_pixel(13)
+	p1starty = to_pixel(6)
+	p2startx = to_pixel(13)
+	p2starty = to_pixel(8)
 	
-	p1 = make_player(to_pixel(13),to_pixel(6),0,0)
-	p2 = make_player(to_pixel(13),to_pixel(8),1,16)
+	p1 = make_player(p1startx,p1starty,0,0)
+	p2 = make_player(p2startx,p2starty,1,16)
 
 	gamelength = 25
+	revive     = 3
+	
 	gameover   = false
 	tick       = 0
 	timer      = gamelength
+	p1tick     = 0
+	p2tick     = 0
 end
 
 
 function _update()
+	--main tick
 	tick = tick + 1
+	
+	--death ticks
+	if not p1.alive then
+		p1tick = p1tick + 1
+	end
+	
+	if not p2.alive then
+		p2tick = p2tick + 1
+	end
 	
 	if timer > 0 then
 		move_players()
 		update_score()
+		update_death()
 		
 		if tick == 30 then
 			timer = timer - 1
