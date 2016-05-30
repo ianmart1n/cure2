@@ -1,6 +1,9 @@
 pico-8 cartridge // http://www.pico-8.com
 version 7
 __lua__
+-- super cure ii
+-- dead 2 rights: arena
+
 -- helper functions
 
 function to_pixel(n)
